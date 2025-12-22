@@ -1,0 +1,20 @@
+{
+  "database": {
+    "type": "",
+    "user": "",
+    "password": "",
+    "database": "",
+    "host": "localhost"
+  },
+  "docker": {
+    "container_name": ""
+  },
+  "files": [],
+  "dropbox": {
+    "access_token": ""
+  },
+  "zip_password": "",
+  "folder": "",
+  "prefix": "",
+  "suffix": "_backup"  
+}
