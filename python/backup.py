@@ -64,7 +64,6 @@ if files:
     timestamp = datetime.now().strftime("%Y_%m_%d_%H-%M-%S")
 
     use_7z = shutil.which("7z") is not None
-    print(use_7z)
     ext = ".7z" if use_7z else ".zip"
 
     archive_name = f"{prefix}{timestamp}{suffix}{ext}"
@@ -72,9 +71,9 @@ if files:
 
     try:
         if use_7z:
-            cmd = ["7z", "a", f"-p{settings['zip_password']}", "-mhe", "-r", "-spf2", archive_path, *files]
+            cmd = ["7z", "a", *settings["zip_params"], f"-p{settings['zip_password']}", "-mhe", "-r", "-spf2", archive_path, *files]
         else:
-            cmd = ["zip","-P", settings["zip_password"], archive_path, *files]
+            cmd = ["zip", *settings["zip_params"], "-P", settings["zip_password"], archive_path, *files]
 
         subprocess.run(cmd, check=True)
     except subprocess.CalledProcessError as e:
