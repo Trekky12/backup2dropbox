@@ -84,8 +84,25 @@ if files:
     # -----------------------
     try:
         dbx = dropbox.Dropbox(settings["dropbox"]["access_token"])
+        file_size = os.path.getsize(archive_path)
+        chunk_size = 8 * 1024 * 1024
+
         with open(archive_path, "rb") as f:
-            dbx.files_upload(f.read(), "/" + archive_name, mode=dropbox.files.WriteMode.add, autorename=True)
+            if file_size <= chunk_size:
+                dbx.files_upload(f.read(), "/" + archive_name, mode=dropbox.files.WriteMode.add, autorename=True)
+            else:
+                upload_session_start_result = dbx.files_upload_session_start(f.read(chunk_size))
+                cursor = dropbox.files.UploadSessionCursor(session_id=upload_session_start_result.session_id, offset=f.tell())
+                commit = dropbox.files.CommitInfo(path="/" + archive_name, mode=dropbox.files.WriteMode.add, autorename=True)
+
+                while f.tell() < file_size:
+                    remaining = file_size - f.tell()
+                    data = f.read(min(chunk_size, remaining))
+                    if remaining <= chunk_size:
+                        dbx.files_upload_session_finish(data, cursor, commit)
+                    else:
+                        dbx.files_upload_session_append_v2(data, cursor)
+                        cursor.offset = f.tell()
     except Exception as e:
         print("Upload to dropbox failed:", e)
 
