@@ -42,7 +42,7 @@ if db and db.get("type") in ("mysql", "sqlite"):
             subprocess.run(cmd, stdout=f, stderr=subprocess.PIPE, check=True)
         files.append(sql_file)
     except subprocess.CalledProcessError as e:
-        print("Failed to create Backup:", e.stderr.decode())
+        print("Failed to create Backup:", e.stderr.decode(), file=sys.stderr)
 
 # ----------------------------
 # Create other files zip
@@ -53,7 +53,7 @@ if settings.get("files"):
         subprocess.run(["zip", "-r", files_zip, *settings["files"]], check=True)
         files.append(files_zip)
     except subprocess.CalledProcessError as e:
-        print("Failed to create ZIP of folders:", e)
+        print("Failed to create ZIP of folders:", e, file=sys.stderr)
 
 # ----------------------------
 # Create archive of all files
@@ -77,13 +77,24 @@ if files:
 
         subprocess.run(cmd, check=True)
     except subprocess.CalledProcessError as e:
-        print("Failed to create complete archive:", e)
+        print("Failed to create complete archive:", e, file=sys.stderr)
 
     # -----------------------
     # Upload archive
     # -----------------------
     try:
         dbx = dropbox.Dropbox(settings["dropbox"]["access_token"])
+
+        usage = dbx.users_get_space_usage()
+        allocation = 0
+        if usage.allocation.is_individual():
+            allocation = usage.allocation.get_individual().allocated
+        elif usage.allocation.is_team():
+            allocation = usage.allocation.get_team().allocated
+
+        if usage.used > allocation:
+            raise Exception("Insufficient space!")
+
         file_size = os.path.getsize(archive_path)
         chunk_size = 8 * 1024 * 1024
 
@@ -104,7 +115,7 @@ if files:
                         dbx.files_upload_session_append_v2(data, cursor)
                         cursor.offset = f.tell()
     except Exception as e:
-        print("Upload to dropbox failed:", e)
+        print("Upload to dropbox failed:", e, file=sys.stderr)
 
     # -----------------------
     # Cleanup
@@ -114,6 +125,6 @@ if files:
         for f in files:
             os.remove(f)
     except OSError as e:
-        print("Failed to remove files:", e)
+        print("Failed to remove files:", e, file=sys.stderr)
 
 sys.exit(0)
