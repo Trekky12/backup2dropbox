@@ -32,7 +32,7 @@ if db and db.get("type") in ("mysql", "sqlite"):
         cmd = ["mysqldump", "-h", db["host"], "-u", db["user"], f"--password={db['password']}", db["database"]]
     else:
         sql_file = os.path.join(folder, "database.db")
-        cmd = ["sqlite3", db["database"], f".backup {sql_file}"]
+        cmd = ["sqlite3", "-cmd", "PRAGMA busy_timeout=10000", db["database"], f".backup {sql_file}"]
 
     if settings.get("docker", {}).get("container_name"):
         cmd = ["docker", "exec", settings["docker"]["container_name"]] + cmd
